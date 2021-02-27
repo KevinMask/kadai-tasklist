@@ -47,8 +47,15 @@ class TasksController extends Controller
      */
     public function store(Request $request)
     {
-              // メッセージを作成
+        // バリデーション
+        $request->validate([
+            'status' => 'required|max:10',   // 追加
+            'content' => 'required',
+        ]);
+
+         // メッセージを作成
         $tasklist = new Task;
+        $tasklist->status = $request->status;
         $tasklist->content = $request->content;
         $tasklist->save();
 
@@ -81,8 +88,8 @@ class TasksController extends Controller
      */
     public function edit($id)
     {
-    
-                // idの値でメッセージを検索して取得
+        
+        // idの値でメッセージを検索して取得
         $tasklist = Task::findOrFail($id);
 
         // メッセージ編集ビューでそれを表示
@@ -101,9 +108,15 @@ class TasksController extends Controller
      */
     public function update(Request $request, $id)
     {
-                // idの値でメッセージを検索して取得
+       // バリデーション
+        $request->validate([
+            'status' => 'required|max:10',   // 追加
+            'content' => 'required',
+        ]);
+        // idの値でメッセージを検索して取得
         $tasklist = Task::findOrFail($id);
         // メッセージを更新
+        $tasklist->status = $request->status;
         $tasklist->content = $request->content;
         $tasklist->save();
 
