@@ -111,11 +111,18 @@ class TasksController extends Controller
         
         // idの値でメッセージを検索して取得
         $tasklist = Task::findOrFail($id);
+        
+        if (\Auth::id() === $tasklist->user_id) {
 
         // メッセージ編集ビューでそれを表示
         return view('tasks.edit', [
             'tasks' => $tasklist,
         ]);
+        
+        }
+        
+        // トップページへリダイレクトさせる
+        return redirect('/');
         
     }
 
