@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\Auth;
+
 use App\Task;
 
 class TasksController extends Controller
@@ -15,13 +17,22 @@ class TasksController extends Controller
      */
     public function index()
     {
-        // メッセージ一覧を取得
-        $tasklist = Task::all();
+        $data = [];
+        if (\Auth::check()) { // 認証済みの場合
+            // 認証済みユーザを取得
+            $user = \Auth::user();
+            // ユーザの投稿の一覧を作成日時の降順で取得
+            // （後のChapterで他ユーザの投稿も取得するように変更しますが、現時点ではこのユーザの投稿のみ取得します）
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(10);
 
-        // メッセージ一覧ビューでそれを表示
-        return view('tasks.index', [
-            'tasks' => $tasklist,
-        ]);
+            $data = [
+                'user' => $user,
+                'tasks' => $tasks,
+            ];
+        }
+
+        // Welcomeビューでそれらを表示
+        return view('welcome', $data);
     }
 
     /**
@@ -55,6 +66,7 @@ class TasksController extends Controller
 
          // メッセージを作成
         $tasklist = new Task;
+        $tasklist->user_id = Auth::id();
         $tasklist->status = $request->status;
         $tasklist->content = $request->content;
         $tasklist->save();
@@ -71,13 +83,21 @@ class TasksController extends Controller
      */
     public function show($id)
     {
-                // idの値でメッセージを検索して取得
+        // idの値でメッセージを検索して取得
         $tasklist = Task::findOrFail($id);
 
+        if (\Auth::id() === $tasklist->user_id) {
+   
         // メッセージ詳細ビューでそれを表示
         return view('tasks.show', [
             'tasks' => $tasklist,
         ]);
+        
+        }
+        
+        // トップページへリダイレクトさせる
+        return redirect('/');
+        
     }
 
     /**
@@ -113,12 +133,15 @@ class TasksController extends Controller
             'status' => 'required|max:10',   // 追加
             'content' => 'required',
         ]);
+        
         // idの値でメッセージを検索して取得
         $tasklist = Task::findOrFail($id);
-        // メッセージを更新
+        
+        if (\Auth::id() === $tasklist->user_id) {
         $tasklist->status = $request->status;
         $tasklist->content = $request->content;
         $tasklist->save();
+        }
 
         // トップページへリダイレクトさせる
         return redirect('/');
@@ -132,10 +155,13 @@ class TasksController extends Controller
      */
     public function destroy($id)
     {
-               // idの値でメッセージを検索して取得
+        // idの値でメッセージを検索して取得
         $tasklist = Task::findOrFail($id);
-        // メッセージを削除
-        $tasklist->delete();
+
+        // 認証済みユーザ（閲覧者）がその投稿の所有者である場合は、投稿を削除
+        if (\Auth::id() === $tasklist->user_id) {
+            $tasklist->delete();
+        }
 
         // トップページへリダイレクトさせる
         return redirect('/');
